@@ -20,6 +20,8 @@
 
 ### Local Development Setup
 
+0. Get a Bot Token from the BotFather link to for instructions: https://core.telegram.org/bots/tutorial
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/Sunny77D/telegram-support-bot.git
