@@ -8,7 +8,6 @@ import os
 import sys
 import signal
 import logging
-from pathlib import Path
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from handlers.message_handlers import (
     help_command,

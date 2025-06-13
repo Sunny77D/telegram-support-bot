@@ -1,10 +1,9 @@
-from datetime import datetime
 import logging
 import re
 from typing import Dict, Optional
-from handlers.messaging.dataclasses import MessageMetadata
-from handlers.supabase_handlers import Supabase
-from handlers.ticketing.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
+from clients.messages.dataclasses import MessageMetadata
+from clients.supabase.supabase_client import Supabase
+from clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
 
 logger = logging.getLogger(__name__)
 supabase_client = Supabase()

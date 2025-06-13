@@ -1,20 +1,9 @@
-from dataclasses import dataclass
 from supabase import create_client, Client
 import json
+from clients.supabase.dataclasses import SupabaseTicketResponse
 
 from config import SUPABASE_KEY, SUPABASE_URL
-from handlers.ticketing.dataclasses import CreateTicketRecord
-
-
-@dataclass
-class SupabaseTicketResponse:
-    ticket_id: str
-    title: str
-    description: str
-    status: str
-    created_by: str
-    updated_at: str
-    created_at: str
+from clients.tickets.dataclasses import CreateTicketRecord
 
 
 class Supabase:
@@ -51,7 +40,6 @@ class Supabase:
             )
             response_json = json.loads(response.json())
             data_response = response_json['data'][0]
-            print(data_response)
             return SupabaseTicketResponse(
                 ticket_id = data_response["id"],
                 title = data_response["title"],
@@ -62,5 +50,4 @@ class Supabase:
                 created_at = data_response["created_at"]
             )
         except Exception as exception:
-            print(exception)
             raise exception
