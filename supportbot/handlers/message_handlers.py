@@ -1,12 +1,9 @@
-from typing import List
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
-from config import BOT_USERNAME
-from handlers.messaging.dataclasses import MessageMetadata
-from handlers.supabase_handlers import Supabase
-from handlers.ticketing.ticket_handlers import handle_ticket_create_command
-from handlers.ticketing.utils import TicketManager
+from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.handlers.ticket_handlers import handle_ticket_create_command
 
 supabase_client = Supabase()
 
@@ -70,32 +67,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
 
+# TODO: This is to handle messages in a group chat. 
+# Should have the same logic as the regular Messaging
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle messages in group chats."""
-    logger = logging.getLogger(__name__)
-    logger.info("=== Group Message Handler ===")
-    logger.info(f"Chat ID: {update.effective_chat.id}")
-    logger.info(f"Message text: {update.message.text}")
-    logger.info(f"Message type: {update.message.chat.type}")
-    
-    message_text = update.message.text
-    # Only process messages that start with '=support'
-    if not message_text or not message_text.strip().startswith('=support'):
-        logger.info("Message doesn't start with =support, ignoring")
-        return
-        
-    try:
-        await update.message.reply_text(
-            f"🌟 *Hello I just Handled the Group Message!* 🌟\n\n"
-            f" ECHO of the last message {message_text}",
-            parse_mode="Markdown"
-        )
-    except ValueError as e:
-        logger.error(f"Error processing command: {str(e)}")
-        await update.message.reply_text(
-            f"Error: {str(e)}\n\n",
-            parse_mode="Markdown"
-        )
+    pass
 
 
 async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

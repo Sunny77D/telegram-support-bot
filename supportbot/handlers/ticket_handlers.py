@@ -1,11 +1,9 @@
-from typing import Dict
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
-from datetime import datetime
-from handlers.messaging.dataclasses import MessageMetadata
-from handlers.ticketing.dataclasses import CreateTicketResponse, TicketResponse
-from handlers.ticketing.utils import TicketManager, TicketParser
+from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.tickets.dataclasses import CreateTicketResponse
+from supportbot.clients.tickets.ticket_client import TicketManager, TicketParser
 
 logger = logging.getLogger(__name__)
 
