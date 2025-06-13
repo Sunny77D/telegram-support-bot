@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
-from clients.messages.dataclasses import MessageMetadata
-from clients.tickets.dataclasses import CreateTicketResponse
-from clients.tickets.ticket_client import TicketManager, TicketParser
+from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.tickets.dataclasses import CreateTicketResponse
+from supportbot.clients.tickets.ticket_client import TicketManager, TicketParser
 
 logger = logging.getLogger(__name__)
 

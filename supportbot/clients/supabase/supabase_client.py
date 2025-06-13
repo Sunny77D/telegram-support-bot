@@ -1,9 +1,9 @@
 from supabase import create_client, Client
 import json
-from clients.supabase.dataclasses import SupabaseTicketResponse
+from supportbot.clients.supabase.dataclasses import SupabaseTicketResponse
 
 from config import SUPABASE_KEY, SUPABASE_URL
-from clients.tickets.dataclasses import CreateTicketRecord
+from supportbot.clients.tickets.dataclasses import CreateTicketRecord
 
 
 class Supabase:

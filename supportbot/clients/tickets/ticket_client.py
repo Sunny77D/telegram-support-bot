@@ -1,9 +1,9 @@
 import logging
 import re
 from typing import Dict, Optional
-from clients.messages.dataclasses import MessageMetadata
-from clients.supabase.supabase_client import Supabase
-from clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
+from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
 
 logger = logging.getLogger(__name__)
 supabase_client = Supabase()

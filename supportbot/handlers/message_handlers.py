@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
-from clients.messages.dataclasses import MessageMetadata
-from clients.supabase.supabase_client import Supabase
-from handlers.ticket_handlers import handle_ticket_create_command
+from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.handlers.ticket_handlers import handle_ticket_create_command
 
 supabase_client = Supabase()
 
