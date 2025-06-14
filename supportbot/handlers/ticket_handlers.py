@@ -1,8 +1,9 @@
 from dataclasses import asdict
+import datetime
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
+from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, Ticket
 from supportbot.clients.tickets.ticket_client import TicketParser
 
 logger = logging.getLogger(__name__)
@@ -77,12 +78,36 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
 async def handle_ticket_update_command(message: str, message_metadata: MessageMetadata) -> str:
     # Try to parse status update command first
     status_update = TicketParser.parse_status_update_command(message)
+    if not status_update:
+        return "Error: Invalid status update command format. Use `update ticket_id: [ID] status: [status]`."
+
+    ticket = await supabase_client.get_row(
+        table='tickets',
+        primary_key='id',
+        primary_data=status_update['ticket_id']
+    )
+    if not ticket:
+        return f"Error: Ticket with ID `{status_update['ticket_id']}` not found."
+    
+    ticket = Ticket(**ticket)
+    if ticket.status == status_update['status']:
+        return f"Error: Ticket with ID `{status_update['ticket_id']}` is already in status `{status_update['status']}`"
+    if ticket.status == "resolved" and status_update['status'] != 'resolved':
+        return f"Error: Ticket with ID `{status_update['ticket_id']}` is already resolved and cannot be updated to `{status_update['status']}`."
+
     if status_update:
+        status_update_supabase = {
+                'status': status_update['status'],
+                'updated_by': message_metadata.username,
+                'updated_at': datetime.datetime.utcnow().isoformat()
+        }
+        if status_update['status'] == 'resolved':
+            status_update_supabase['resolved_at'] = datetime.datetime.utcnow().isoformat()
         result = await supabase_client.update_row(
             primary_key='id',
             primary_data=status_update['ticket_id'],
             table='tickets',
-            update_dict={'status': status_update['status']}
+            update_dict=status_update_supabase
         )
         return format_status_update_message(
             ticket_id=result['id'],

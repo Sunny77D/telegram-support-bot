@@ -8,6 +8,32 @@ class Supabase:
     def __init__(self):
         self.supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
+    async def get_row(self, table: str, primary_key: str, primary_data: str) -> dict:
+        """
+        Generic Get Function for retrieving a row from a Supabase table.
+        Args:
+            table (str): The name of the table to query.
+            primary_key (str): The primary key of the row to retrieve.
+            primary_data (str): The value of the primary key to match.
+        Returns:
+            dict: The row data as a dictionary.
+        """
+        try:
+            response = (
+                self.supabase_client.table(table)
+                .select("*")
+                .eq(primary_key, primary_data)
+                .execute()
+            )
+            response_json = json.loads(response.json())
+            if response_json['data']:
+                return response_json['data'][0]
+            else:
+                return {}
+        except Exception as e:
+            raise e
+
     """
         Generic Insert Function for inserting a row into a Supabase table.
         Args:

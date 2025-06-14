@@ -1,34 +1,44 @@
+from dataclasses import asdict
 from telegram import Update
 from telegram.ext import ContextTypes
 import logging
-from supportbot.clients.messages.dataclasses import MessageMetadata
+from supportbot.clients.messages.dataclasses import MessageMetadata, Message
 from supportbot.clients.supabase.supabase_client import Supabase
 from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
 
 supabase_client = Supabase()
+logger = logging.getLogger(__name__)
 
-# TODO: Handle non support messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process incoming messages and generate charts based on user commands.
     """
     message_text = update.message.text.strip()
-    logger = logging.getLogger(__name__)
-
-    logger.info("=== Group Message Handler ===")
-    logger.info(f"Chat ID: {update.effective_chat.id}")
-    logger.info(f"Message text: {update.message.text}")
-    logger.info(f"Message type: {update.message.chat.type}")
-    logger.info(f"Message From User: {update.effective_sender.username}")
     username = update.effective_sender.username
     chat_id = update.effective_chat.id
     chat_name =  update.effective_chat.title if update.effective_chat.title else update.effective_chat.username
     update_id = update.update_id
     message = update.message.text
 
-    if not message or not message.strip().startswith('=support'):
-        logger.info("Message doesn't start with =support, ignoring")
+    if not message:
+        logger.warning("Received an empty message, skipping processing.")
         return
+
+    if not message.strip().startswith('=support'):
+        message = Message(
+            message=message_text,
+            chat_id=chat_id,
+            chat_name=chat_name,
+            username=username,
+            update_id=update_id
+        )
+        message_insert_response = await supabase_client.insert_row(
+            table='messages',
+            dict=asdict(message)
+        )
+        logger.info(f"Message doesn't start with =support, inserting into messages table: {message_insert_response}")
+        return
+
     support_prefix = message.strip()[0:9]
     stripped_message = message.strip()[9:]
     command = stripped_message.split(" ")[0].lower()
