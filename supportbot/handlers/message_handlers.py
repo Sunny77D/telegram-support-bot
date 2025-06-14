@@ -7,10 +7,7 @@ from supportbot.handlers.ticket_handlers import handle_ticket_create_command, ha
 
 supabase_client = Supabase()
 
-
-# TODO Parse the handle message to call two different functions base on what we get
-# Either 1 create tickets, or 2. update tickets. 
-# Next Step is to get response back after you tell them a suggestion. 
+# TODO: Handle non support messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process incoming messages and generate charts based on user commands.
@@ -48,7 +45,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 else:
                     await update.message.reply_text(response, parse_mode="Markdown")
-            # TODO: Implement this flow
             case "update":
                 response = await handle_ticket_update_command(stripped_message, message_metadata)
                 await update.message.reply_text(response, parse_mode="Markdown")

@@ -31,7 +31,6 @@ def format_create_ticket_message(ticket_data: CreateTicketResponse) -> str:
     )
 
 
-# TODO Implement Update logic
 def format_status_update_message(ticket_id: str, new_status: str, username: str) -> str:
     """Format status update message for display."""
     status_emoji = STATUS_EMOJIS.get(new_status, '🔓')
@@ -79,8 +78,6 @@ async def handle_ticket_update_command(message: str, message_metadata: MessageMe
     # Try to parse status update command first
     status_update = TicketParser.parse_status_update_command(message)
     if status_update:
-        # TODO Implement the logic to update the ticket status
-        # For now, just return a placeholder response
         result = await supabase_client.update_row(
             primary_key='id',
             primary_data=status_update['ticket_id'],
