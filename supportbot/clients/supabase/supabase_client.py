@@ -1,53 +1,55 @@
+import logging
 from supabase import create_client, Client
 import json
-from supportbot.clients.supabase.dataclasses import SupabaseTicketResponse
-
 from config import SUPABASE_KEY, SUPABASE_URL
-from supportbot.clients.tickets.dataclasses import CreateTicketRecord
 
-
+logger = logging.getLogger(__name__)
 class Supabase:
     def __init__(self):
         self.supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    async def insert_message(self, chat_id, username, message, update_id):
+    """
+        Generic Insert Function for inserting a row into a Supabase table.
+        Args:
+            table (str): The name of the table to insert into.
+            dict (dict): A dictionary containing the data to insert.
+        Returns:
+            dict: The inserted row data as a dictionary.
+    """
+    async def insert_row(self, table, dict: dict) -> dict:
         try: 
             response = (
-                self.supabase_client.table("messages")
-                .insert({"chat_id": chat_id, "username": username,  "message": message, "update_id": update_id})
+                self.supabase_client.table(table)
+                .insert(dict)
                 .execute()
-            )
-            return json.loads(response.json())
-
-        except Exception as exception:
-            raise exception
-
-    async def create_ticket(self, ticket_record: CreateTicketRecord):
-        try:
-            response = (
-                self.supabase_client.table("tickets")
-                    .insert(
-                        {
-                            "chat_id": ticket_record.chat_id,
-                            "chat_name": ticket_record.chat_name,
-                            "title": ticket_record.title,
-                            "description": ticket_record.description,
-                            "status": ticket_record.status,
-                            "created_by": ticket_record.created_by,
-                        }
-                    )
-                    .execute()
             )
             response_json = json.loads(response.json())
             data_response = response_json['data'][0]
-            return SupabaseTicketResponse(
-                ticket_id = data_response["id"],
-                title = data_response["title"],
-                description = data_response["description"],
-                status = data_response["status"],
-                created_by = data_response["created_by"],
-                updated_at = data_response["updated_at"],
-                created_at = data_response["created_at"]
+            return data_response
+        except Exception as e:
+            raise e
+
+    """
+        Generic Update Function for updating a row in a Supabase table.
+        Args:
+            primary_key (str): The primary key of the row to update.
+            primary_data (str): The value of the primary key to match.
+            table (str): The name of the table to update.
+            update_dict (dict): A dictionary containing the data to update.
+        Returns:
+            dict: The updated row data as a dictionary.
+    """
+    async def update_row(self, primary_key, primary_data, table, update_dict: dict) -> dict:
+        try:
+            response = (
+                self.supabase_client.table(table)
+                .update(update_dict)
+                .eq(primary_key, primary_data)
+                .execute()
             )
+            response_json = json.loads(response.json())
+            data_response = response_json['data'][0]
+            return data_response
         except Exception as exception:
+            logger.error(f"Error updating {primary_key}: {str(exception)}")
             raise exception

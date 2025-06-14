@@ -1,9 +1,9 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+from dataclasses import asdict
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata
-from supportbot.clients.tickets.dataclasses import CreateTicketResponse
-from supportbot.clients.tickets.ticket_client import TicketManager, TicketParser
+from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, TicketCreateMesage
+from supportbot.clients.tickets.ticket_client import TicketParser
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,10 @@ logger = logging.getLogger(__name__)
 STATUS_EMOJIS = {
     'open': '🔓',
     'in_progress': '⏳',
-    'done': '✅'
+    'resolved': '✅'
 }
+
+supabase_client = Supabase()
 
 def format_create_ticket_message(ticket_data: CreateTicketResponse) -> str:
     """Format ticket information for display."""
@@ -31,25 +33,63 @@ def format_create_ticket_message(ticket_data: CreateTicketResponse) -> str:
 
 # TODO Implement Update logic
 def format_status_update_message(ticket_id: str, new_status: str, username: str) -> str:
-    pass
+    """Format status update message for display."""
+    status_emoji = STATUS_EMOJIS.get(new_status, '🔓')
+    return (
+        f"🎫 *Ticket Status Updated!*\n\n"
+        f"📋 *Ticket ID:* `{ticket_id}`\n"
+        f"{status_emoji} *New Status:* {new_status.replace('_', ' ').title()}\n"
+        f"👤 *Updated by:* @{username}"
+    )
+
 
 async def handle_ticket_create_command(message: str, message_metadata : MessageMetadata) -> str:
     # Try to parse status update command first
     create_ticket_message = TicketParser.parse_ticket_create_command(message)
     if create_ticket_message:
-        ticket_manager = TicketManager()
-        result = await ticket_manager.create_ticket(
-            ticket_data=create_ticket_message,
-            message_metadata=message_metadata
+        create_ticket_response = CreateTicketRecord(
+            title=create_ticket_message.title,
+            description=create_ticket_message.description,
+            status='open',
+            created_by=message_metadata.username,
+            chat_id=message_metadata.chat_id,
+            chat_name=message_metadata.chat_name
         )
-        if result:
-            response = format_create_ticket_message(result)
+        result = await supabase_client.insert_row(
+            table='tickets',
+            dict=asdict(create_ticket_response)
+        )
+        response_obj = CreateTicketResponse(
+            ticket_id=result['id'],
+            title=result['title'],
+            description=result['description'],
+            status=result['status'],
+            chat_id=result['chat_id'],
+            chat_name=result['chat_name'],
+            created_by=result.get("created_by", 'anon'),
+            created_at = result["created_at"]
+        )
+        if response_obj:
+            response = format_create_ticket_message(response_obj)
             return response
-        else:
-            return None
     return None
 
 
-# TODO Implement Logic
-async def handle_ticket_update_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+async def handle_ticket_update_command(message: str, message_metadata: MessageMetadata) -> str:
+    # Try to parse status update command first
+    status_update = TicketParser.parse_status_update_command(message)
+    if status_update:
+        # TODO Implement the logic to update the ticket status
+        # For now, just return a placeholder response
+        result = await supabase_client.update_row(
+            primary_key='id',
+            primary_data=status_update['ticket_id'],
+            table='tickets',
+            update_dict={'status': status_update['status']}
+        )
+        return format_status_update_message(
+            ticket_id=result['id'],
+            new_status=result['status'],
+            username=message_metadata.username
+        )
+    return None
