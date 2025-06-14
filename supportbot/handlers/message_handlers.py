@@ -3,14 +3,11 @@ from telegram.ext import ContextTypes
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.handlers.ticket_handlers import handle_ticket_create_command
+from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
 
 supabase_client = Supabase()
 
-
-# TODO Parse the handle message to call two different functions base on what we get
-# Either 1 create tickets, or 2. update tickets. 
-# Next Step is to get response back after you tell them a suggestion. 
+# TODO: Handle non support messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process incoming messages and generate charts based on user commands.
@@ -40,7 +37,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         match command:
             case "create":
-                response = await handle_ticket_create_command(message, message_metadata)
+                response = await handle_ticket_create_command(stripped_message, message_metadata)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
@@ -48,9 +45,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 else:
                     await update.message.reply_text(response, parse_mode="Markdown")
-            # TODO: Implement this flow
             case "update":
-                await update.message.reply_text("This has not been implemented yet", parse_mode="Markdown")
+                response = await handle_ticket_update_command(stripped_message, message_metadata)
+                await update.message.reply_text(response, parse_mode="Markdown")
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
