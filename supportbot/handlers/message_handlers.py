@@ -9,6 +9,19 @@ from supportbot.handlers.ticket_handlers import handle_ticket_create_command, ha
 supabase_client = Supabase()
 logger = logging.getLogger(__name__)
 
+
+# TODO: Create a response + structure to get a user started
+# 1. We need to ask the user to create a bot if they don't have one.
+# Note a user can have multiple bots, so we need to make sure they have at least one bot.
+# 2. If they have a bot we don't need to do anything. 
+# 3. They can call the help command themself to get started. 
+# 4. Once they have a bot, we can they can do everything else they need to do. 
+# 5. We should send them advice on how to add the bot to a group chat.
+# The functionality in dms should be different from the functionality in a group chat.
+# In the dms people can see all the tickets their bots have that are still open
+# Get a summary of the tickets they have open. And all the messages from X days ago.
+# They should also be able to create and update tickets but will need to give a bot id.
+# V2: They should be able to create teams and assign tickets to teams + as well as members.
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process incoming messages and generate charts based on user commands.
@@ -67,6 +80,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     f"  2. =support update [ticket_id] in progress|done",
                     parse_mode="Markdown"
                 )
+    ###
+    # How to send a message to a specific chat ID
+    # bot = context.bot  # Get the bot instance from the context
+    # chat_id = update.effective_chat.id  # Get the chat ID from the update
+    # try:
+    # bot.send_message(chat_id=chat_id, text=message_text)
+    # print(f"Message sent to chat ID: {chat_id}")
+    ###
     except Exception as e:
         await update.message.reply_text(
             f"Error: {str(e)}\n\n"
@@ -75,11 +96,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 # TODO: This is to handle messages in a group chat. 
-# Should have the same logic as the regular Messaging
+# Most of the logic in the handle message should actually be moved here.
+# We just need to make sure the bot is "activiated" in the group chat.
+# The user with the bot account must have added the bot to the group chat.
+# And called the /start command in the group chat with the bot ID. 
+# This will ensure that the bot is active in the group chat.
+# And can do the funcions it needs to do (e.g. create and  update tickets + track messages).
+# otherwise we can just ignore the messages in the group chat.
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     pass
 
 
+
+# TODO: This is to handle the welcome message when the bot is added to a group chat.
 async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Send a welcome message when the bot is added to a group chat.
@@ -144,7 +173,7 @@ async def command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif command == 'help':
         await help_command(update, context)
 
-
+# TODO: Start the command in order to create a 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Handle the /start command - welcome new users.
