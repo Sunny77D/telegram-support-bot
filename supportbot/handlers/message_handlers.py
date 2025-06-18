@@ -13,11 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: Create a response + structure to get a user started
-# 1. We need to ask the user to create a bot if they don't have one.
-# Note a user can have multiple bots, so we need to make sure they have at least one bot.
-# 2. If they have a bot we don't need to do anything. 
-# 3. They can call the help command themself to get started. 
-# 4. Once they have a bot, we can they can do everything else they need to do. 
 # 5. We should send them advice on how to add the bot to a group chat.
 # The functionality in dms should be different from the functionality in a group chat.
 # In the dms people can see all the tickets their bots have that are still open
@@ -41,7 +36,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     user = await get_user(update.effective_user, supabase_client)
 
-    # Check if the user has a bot account
     if not user.bot_id and 'build' not in message.strip():
         await update.message.reply_text(
             f" Please Create a Bot \n"
@@ -56,7 +50,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     bot = await get_bot_for_user(username, supabase_client)
 
     if not message.strip().startswith('=support'):
-        # TODO: Need to add bot id to the message too! 
         message = Message(
             message=message_text,
             chat_id=chat_id,
@@ -146,7 +139,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
 
-# TODO: This is to handle messages in a group chat. 
+# TODO: This is to handle messages in a group chat. --> MAIN Thing to tackle Thursday
 # Most of the logic in the handle message should actually be moved here.
 # We just need to make sure the bot is "activiated" in the group chat.
 # The user with the bot account must have added the bot to the group chat.
