@@ -4,6 +4,8 @@ from telegram.ext import ContextTypes
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata, Message
 from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.handlers.bot_handlers import handle_build_bot_command
+from supportbot.handlers.helper import get_bot_for_user, get_user
 from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
 
 supabase_client = Supabase()
@@ -37,13 +39,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.warning("Received an empty message, skipping processing.")
         return
 
+    user = await get_user(update.effective_user, supabase_client)
+
+    # Check if the user has a bot account
+    if not user.bot_id and 'build' not in message.strip():
+        await update.message.reply_text(
+            f" Please Create a Bot \n"
+            f" Use the following command to create a bot: \n"
+            f" =support build bot: [BOT_NAME]\n\n"
+            f"Note: You can only have one bot attached per account\n"
+            f"If you would like to be added to a support bot team\n"
+            f"please reach out to the Support Bot Team or the creator of the bot you would like to join.",
+            parse_mode="Markdown"
+        )
+
+    bot = await get_bot_for_user(username, supabase_client)
+
     if not message.strip().startswith('=support'):
+        # TODO: Need to add bot id to the message too! 
         message = Message(
             message=message_text,
             chat_id=chat_id,
             chat_name=chat_name,
             username=username,
-            update_id=update_id
+            update_id=update_id,
+            bot_id=bot.bot_id
         )
         message_insert_response = await supabase_client.insert_row(
             table='messages',
@@ -60,7 +80,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         match command:
             case "create":
-                response = await handle_ticket_create_command(stripped_message, message_metadata)
+                response = await handle_ticket_create_command(stripped_message, message_metadata, bot)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
@@ -69,8 +89,44 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 else:
                     await update.message.reply_text(response, parse_mode="Markdown")
             case "update":
-                response = await handle_ticket_update_command(stripped_message, message_metadata)
+                response = await handle_ticket_update_command(stripped_message, message_metadata, bot)
                 await update.message.reply_text(response, parse_mode="Markdown")
+            case "build":
+                if bot:
+                    await update.message.reply_text(
+                        f" You already have a bot created: {bot.bot_name}\n"
+                        f" If you would like to create a new bot please delete the old one first.\n"
+                        f" Note: You can only have one bot attached per account\n",
+                        parse_mode="Markdown"
+                    )
+                    return
+                bot_built = await handle_build_bot_command(stripped_message, message_metadata, supabase_client)
+                if not bot_built:
+                    await update.message.reply_text(
+                        f"Error: No Reponse\n\n"
+                        f"Internal Error please reach out to the team"
+                    )
+                await update.message.reply_text(
+                    f" {bot_built} \n\n"
+                    f" You can now add the bot to a group chat and start using it.\n"
+                    f" Use the following command to add more user to the bot: \n"
+                    f" =support add user: [username] to bot: [BOT_NAME]\n"
+                    f" Note: You can only have one bot attached per account\n",
+                    parse_mode="Markdown"
+                )
+            case "add":
+                # TODO: Handle the add user to bot command
+                # response = handle_add_user_to_bot_command(stripped_message, message_metadata)
+                response = None
+                if not response:
+                    await update.message.reply_text(
+                        f"Error: No Reponse\n\n"
+                        f"Internal Error please reach out to the team"
+                    )
+                await update.message.reply_text(
+                    f"User added to bot successfully! \n\n",
+                    parse_mode="Markdown"
+                )
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
@@ -78,16 +134,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     f" Please only give one of the following commands:\n\n"
                     f"  1. =support create Title: [title] Description: [description]"
                     f"  2. =support update [ticket_id] in progress|done",
+                    f"  3. =support build bot: [BOT_NAME]\n"
+                    f"  4. =support add user: [username] to bot: [BOT_NAME]\n"
+                    f"Note: You can only have one bot attached per account\n",
                     parse_mode="Markdown"
                 )
-    ###
-    # How to send a message to a specific chat ID
-    # bot = context.bot  # Get the bot instance from the context
-    # chat_id = update.effective_chat.id  # Get the chat ID from the update
-    # try:
-    # bot.send_message(chat_id=chat_id, text=message_text)
-    # print(f"Message sent to chat ID: {chat_id}")
-    ###
     except Exception as e:
         await update.message.reply_text(
             f"Error: {str(e)}\n\n"
@@ -103,6 +154,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # This will ensure that the bot is active in the group chat.
 # And can do the funcions it needs to do (e.g. create and  update tickets + track messages).
 # otherwise we can just ignore the messages in the group chat.
+# The idea is that there will be a get_bot_for_chat function that will check if the bot is active in the group chat.
+# AND activated by the right user.
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     pass
 
@@ -135,7 +188,7 @@ async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if any(member.id == bot_id for member in new_members):
             # Get the chat name for a personalized welcome
             chat_name = update.effective_chat.title or "this group" if update.effective_chat else "this group"
-            
+
             # Send a beautifully formatted welcome message
             await update.message.reply_text(
                 f"🌟 *Hello {chat_name}!* 🌟\n\n"
