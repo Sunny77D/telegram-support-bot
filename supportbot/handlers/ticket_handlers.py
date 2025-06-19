@@ -1,10 +1,12 @@
 from dataclasses import asdict
 import datetime
 import logging
+
 from supportbot.clients.messages.dataclasses import MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
 from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, Ticket
 from supportbot.clients.tickets.ticket_client import TicketParser
+from supportbot.dataclasses import Bot
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ def format_create_ticket_message(ticket_data: CreateTicketResponse) -> str:
     """Format ticket information for display."""
     status_emoji = STATUS_EMOJIS.get(ticket_data.status, '🔓')
     return (
-        f"🎫 *Ticket Created Successfully!*\n\n"
+        f"🎫 *Ticket Created Successfully via bot: {ticket_data.bot_name}!*\n\n"
         f"📋 *Ticket ID:* `{ticket_data.ticket_id}`\n"
         f"📝 *Title:* {ticket_data.title}\n"
         f"📄 *Description:* {ticket_data.description}\n"
@@ -43,7 +45,7 @@ def format_status_update_message(ticket_id: str, new_status: str, username: str)
     )
 
 
-async def handle_ticket_create_command(message: str, message_metadata : MessageMetadata) -> str:
+async def handle_ticket_create_command(message: str, message_metadata : MessageMetadata, bot: Bot) -> str:
     # Try to parse status update command first
     create_ticket_message = TicketParser.parse_ticket_create_command(message)
     if create_ticket_message:
@@ -53,7 +55,8 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
             status='open',
             created_by=message_metadata.username,
             chat_id=message_metadata.chat_id,
-            chat_name=message_metadata.chat_name
+            chat_name=message_metadata.chat_name,
+            bot_id=bot.bot_id if bot else None
         )
         result = await supabase_client.insert_row(
             table='tickets',
@@ -67,7 +70,8 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
             chat_id=result['chat_id'],
             chat_name=result['chat_name'],
             created_by=result.get("created_by", 'anon'),
-            created_at = result["created_at"]
+            created_at = result["created_at"],
+            bot_name=bot.bot_name if bot else None,
         )
         if response_obj:
             response = format_create_ticket_message(response_obj)
@@ -75,7 +79,7 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
     return None
 
 
-async def handle_ticket_update_command(message: str, message_metadata: MessageMetadata) -> str:
+async def handle_ticket_update_command(message: str, message_metadata: MessageMetadata, bot: Bot) -> str:
     # Try to parse status update command first
     status_update = TicketParser.parse_status_update_command(message)
     if not status_update:
@@ -94,6 +98,8 @@ async def handle_ticket_update_command(message: str, message_metadata: MessageMe
         return f"Error: Ticket with ID `{status_update['ticket_id']}` is already in status `{status_update['status']}`"
     if ticket.status == "resolved" and status_update['status'] != 'resolved':
         return f"Error: Ticket with ID `{status_update['ticket_id']}` is already resolved and cannot be updated to `{status_update['status']}`."
+    if ticket.bot_id != bot.bot_id:
+        return f"Error: Ticket with ID `{status_update['ticket_id']}` does not belong to the bot you have access to"
 
     if status_update:
         status_update_supabase = {

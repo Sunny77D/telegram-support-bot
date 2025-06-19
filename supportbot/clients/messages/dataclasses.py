@@ -14,3 +14,4 @@ class Message:
     chat_name: str
     username: str
     update_id: str
+    bot_id: int | None = None

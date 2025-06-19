@@ -15,6 +15,7 @@ class CreateTicketRecord:
     chat_id: str
     chat_name: str
     created_by: str
+    bot_id: int | None = None
 
 @dataclass    
 class CreateTicketResponse:
@@ -26,6 +27,7 @@ class CreateTicketResponse:
     chat_name: str
     created_by: str
     created_at: str = datetime.utcnow().isoformat()
+    bot_name: str | None = None
 
 @dataclass
 class Ticket:
@@ -41,3 +43,4 @@ class Ticket:
     created_at: datetime | None = None
     updated_at: datetime | None = None
     resolved_at: datetime | None = None
+    bot_id: int | None = None

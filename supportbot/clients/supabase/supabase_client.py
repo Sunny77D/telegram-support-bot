@@ -28,6 +28,8 @@ class Supabase:
             )
             response_json = json.loads(response.json())
             if response_json['data']:
+                if len(response_json['data']) > 1:
+                    return response_json['data']
                 return response_json['data'][0]
             else:
                 return {}
