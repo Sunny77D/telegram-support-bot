@@ -139,6 +139,10 @@ async def handle_add_user_to_bot_command(
             dict=user_metadata
         )
     else:
+        if user_to_update.get('bot_id') == bot.bot_id:
+            return f"User '{username_to_update}' is already added to the bot {bot.bot_name}."
+        # If the user exists, update their bot_id to the current bot's id
+        logger.info(f"User '{username_to_update}' already exists. Updating their bot_id to {bot.bot_id}.")
         # Update the user's bot_id
         updated_data = {
             'bot_id': bot.bot_id,
