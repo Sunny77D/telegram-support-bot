@@ -104,7 +104,7 @@ async def handle_add_user_to_bot_command(
     bot: Bot,
 ) -> str | None:
     """
-    Handle the =support add user to bot: [USERNAME] command.
+    Handle the =support add user: [USERNAME] command.
     This function should interact with the Supabase client to add a user to the bot.
     It will return a confirmation message upon successful addition or an error message if something goes wrong.
     """

@@ -103,7 +103,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     parse_mode="Markdown"
                 )
             case "add":
-                response = handle_add_user_to_bot_command(stripped_message, message_metadata, supabase_client, bot)
+                response = await handle_add_user_to_bot_command(stripped_message, message_metadata, supabase_client, bot)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
