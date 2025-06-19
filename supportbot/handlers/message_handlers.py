@@ -4,8 +4,8 @@ from telegram.ext import ContextTypes
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata, Message
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.handlers.bot_handlers import handle_build_bot_command
-from supportbot.handlers.helper import get_bot_for_user, get_user
+from supportbot.handlers.bot_handlers import handle_activate_bot_command, handle_build_bot_command
+from supportbot.handlers.helper import get_bot_for_chat, get_bot_for_user, get_user
 from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
 
 supabase_client = Supabase()
@@ -13,11 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: Create a response + structure to get a user started
-# 5. We should send them advice on how to add the bot to a group chat.
-# The functionality in dms should be different from the functionality in a group chat.
-# In the dms people can see all the tickets their bots have that are still open
-# Get a summary of the tickets they have open. And all the messages from X days ago.
-# They should also be able to create and update tickets but will need to give a bot id.
 # V2: They should be able to create teams and assign tickets to teams + as well as members.
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
@@ -109,6 +104,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 )
             case "add":
                 # TODO: Handle the add user to bot command
+                # Should take the username and bot name and add the user to the bot. 
+                # Can only be done by the bot owner.
                 # response = handle_add_user_to_bot_command(stripped_message, message_metadata)
                 response = None
                 if not response:
@@ -139,19 +136,99 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
 
-# TODO: This is to handle messages in a group chat. --> MAIN Thing to tackle Thursday
-# Most of the logic in the handle message should actually be moved here.
-# We just need to make sure the bot is "activiated" in the group chat.
-# The user with the bot account must have added the bot to the group chat.
-# And called the /start command in the group chat with the bot ID. 
-# This will ensure that the bot is active in the group chat.
-# And can do the funcions it needs to do (e.g. create and  update tickets + track messages).
-# otherwise we can just ignore the messages in the group chat.
-# The idea is that there will be a get_bot_for_chat function that will check if the bot is active in the group chat.
-# AND activated by the right user.
+# Handles messages in group chats where the bot is added
+# This is to handle the group chat messages and commands.
+# It will handle the commands that start with =support and will process the messages accordingly.
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    """
+    Process incoming messages and generate charts based on user commands.
+    """
+    message_text = update.message.text.strip()
+    username = update.effective_sender.username
+    chat_id = update.effective_chat.id
+    chat_name =  update.effective_chat.title if update.effective_chat.title else update.effective_chat.username
+    update_id = update.update_id
+    message = update.message.text
 
+    if not message:
+        logger.warning("Received an empty message, skipping processing.")
+        return
+
+    # Get the bot for the chat
+    bot = await get_bot_for_chat(chat_id, supabase_client)
+    if not message.strip().startswith('=support'):
+        if bot:
+            message = Message(
+                message=message_text,
+                chat_id=chat_id,
+                chat_name=chat_name,
+                username=username,
+                update_id=update_id,
+                bot_id=bot.bot_id
+            )
+            message_insert_response = await supabase_client.insert_row(
+                table='messages',
+                dict=asdict(message)
+            )
+            logger.info(f"Message doesn't start with =support, inserting into messages table: {message_insert_response}")
+        else:
+            logger.info(f"Message doesn't start with =support and no bot is active in the chat, so no action taken.")
+        return
+
+
+    support_prefix = message.strip()[0:9]
+    stripped_message = message.strip()[9:]
+    command = stripped_message.split(" ")[0].lower()
+    full_command_text = support_prefix + command
+    message_metadata = MessageMetadata(username=username, chat_id=chat_id, chat_name=chat_name, update_id=update_id)
+
+    if not bot and command != 'activate':
+        await update.message.reply_text(
+            f" Please Activate the Bot for this chat with the following command \n"
+            f" Use the following command to activate the bot: \n"
+            f" =support activate\n",
+            parse_mode="Markdown"
+        )
+        return
+
+    try:
+        # It should only have a few commands that it can handle.
+        # 1. Create a ticket
+        # 2. Update a ticket
+        # 3. Activate a bot in the group chat
+        match command:
+            case "create":
+                response = await handle_ticket_create_command(stripped_message, message_metadata, bot)
+                if not response:
+                    await update.message.reply_text(
+                        f"Error: No Reponse\n\n"
+                        f"Internal Error please reach out to the team"
+                    )
+                else:
+                    await update.message.reply_text(response, parse_mode="Markdown")
+            case "update":
+                response = await handle_ticket_update_command(stripped_message, message_metadata, bot)
+                await update.message.reply_text(response, parse_mode="Markdown")
+            # You can only activate a bot in the group chat if you are the owner of the bot.
+            case "activate":
+                response = await handle_activate_bot_command(stripped_message, message_metadata, supabase_client)
+                await update.message.reply_text(response, parse_mode="Markdown")
+            case _:
+                await update.message.reply_text(
+                    f" Command is not recognize \n\n"
+                    f" The previous command was {full_command_text}\n"
+                    f" Please only give one of the following commands:\n\n"
+                    f"  1. =support create ticket Title: [title] Description: [description]"
+                    f"  2. =support update ticket [ticket_id] in progress|resolved\n",
+                    f"  3. =support activate\n"
+                    f"Note: You can only have one bot attached per account\n",
+                    parse_mode="Markdown"
+                )
+    except Exception as e:
+        await update.message.reply_text(
+            f"Error: {str(e)}\n\n"
+            f"Internal Error please reach out to the team"
+        )
 
 
 # TODO: This is to handle the welcome message when the bot is added to a group chat.

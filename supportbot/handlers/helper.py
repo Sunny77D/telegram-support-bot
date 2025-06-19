@@ -67,6 +67,27 @@ async def get_bot_for_user(username, supabase_client: Supabase) -> Bot | None:
     else:
         return await get_bot(bot_id, supabase_client)
 
+async def get_bot_for_chat(chat_id: int, supabase_client: Supabase) -> Bot | None:
+    """
+    Retrieve bot information from the database based on the chat ID.
+
+    Args:
+        chat_id (int): The ID of the chat to retrieve the bot for.
+        supabase_client (Supabase): The Supabase client instance for database operations.
+
+    Returns:
+        Bot: A Bot object containing bot information if found, otherwise None.
+    """
+    row = await supabase_client.get_row(
+        table='bot_chats',
+        primary_key='chat_id',
+        primary_data=chat_id
+    )
+    bot_id = row.get('bot_id') if row else None
+    if not bot_id:
+        return None
+    else:
+        return await get_bot(bot_id, supabase_client)
 
 async def get_bot(bot_id: int, supabase_client: Supabase) -> Bot | None:
     """

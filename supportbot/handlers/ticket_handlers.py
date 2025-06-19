@@ -56,7 +56,7 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
             created_by=message_metadata.username,
             chat_id=message_metadata.chat_id,
             chat_name=message_metadata.chat_name,
-            bot_id=bot.bot_id if bot else None
+            bot_id=bot.bot_id
         )
         result = await supabase_client.insert_row(
             table='tickets',
@@ -71,7 +71,7 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
             chat_name=result['chat_name'],
             created_by=result.get("created_by", 'anon'),
             created_at = result["created_at"],
-            bot_name=bot.bot_name if bot else None,
+            bot_name=bot.bot_name
         )
         if response_obj:
             response = format_create_ticket_message(response_obj)

@@ -1,6 +1,7 @@
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.dataclasses import Bot
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ async def handle_build_bot_command(message: str, message_metadata: MessageMetada
         return "Please provide a valid bot name after 'build bot:'."
 
     bot_name = parts[1].strip()
-    print(bot_name)
 
     # Create a new bot record in the database
     try:
@@ -45,3 +45,54 @@ async def handle_build_bot_command(message: str, message_metadata: MessageMetada
     except Exception as e:
         logger.info(f"An error occurred while creating the bot: {str(e)}")
         return None
+
+
+async def handle_activate_bot_command(message: str, message_metadata: MessageMetadata, supabase_client: Supabase) -> str | None:
+    try:
+        # Double check if the bot is already activated for the chat
+        existing_bot_chat = await supabase_client.get_row(
+            table='bot_chats',
+            primary_key='chat_id',
+            primary_data=message_metadata.chat_id
+        )
+        if existing_bot_chat and existing_bot_chat.get('status') == 'active':
+            return f"Bot '{existing_bot_chat.get('bot_name')}' is already activated for this chat."
+
+        user = await supabase_client.get_row(
+            table='users',
+            primary_key='username',
+            primary_data=message_metadata.username
+        )
+
+        if not user:
+            return f"You do not have a user account. Please create one first by dming the bot directly." 
+
+        bot_id = user.get('bot_id')
+
+        if not bot_id:
+            return f"You do not have a bot associated with your username. Please create a bot first using the =support build bot: [BOT_NAME] command \n or ask the bot owner to add you to the bot by dming the bot directly."
+
+        bot = await supabase_client.get_row(
+            table='bots',
+            primary_key='id',
+            primary_data=bot_id
+        )
+        bot_name = bot.get('bot_name')
+        if bot.get('created_by') != message_metadata.username:
+            return f"You do not have permission to activate the bot '{bot_name}'. Only the creator can activate it."
+
+        bot_chat_data = {
+            'bot_name': bot_name,
+            'bot_id': bot.get('id'),
+            'chat_id': message_metadata.chat_id,
+            'chat_name': message_metadata.chat_name,
+            'status': 'active',
+        }
+        result = await supabase_client.insert_row(table='bot_chats', dict=bot_chat_data)
+        if result:
+            return f"Bot '{bot_name}' has been activated for chat: {message_metadata.chat_name}!"
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"An error occurred while activating the bot: {str(e)}")
+        return "An error occurred while activating the bot. Please try again later."
