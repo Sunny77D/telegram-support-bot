@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 import logging
 from supportbot.clients.messages.dataclasses import MessageMetadata, Message
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.handlers.bot_handlers import handle_activate_bot_command, handle_build_bot_command
+from supportbot.handlers.bot_handlers import handle_activate_bot_command, handle_add_user_to_bot_command, handle_build_bot_command
 from supportbot.handlers.helper import get_bot_for_chat, get_bot_for_user, get_user
 from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
 
@@ -103,20 +103,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     parse_mode="Markdown"
                 )
             case "add":
-                # TODO: Handle the add user to bot command
-                # Should take the username and bot name and add the user to the bot. 
-                # Can only be done by the bot owner.
-                # response = handle_add_user_to_bot_command(stripped_message, message_metadata)
-                response = None
+                response = handle_add_user_to_bot_command(stripped_message, message_metadata, supabase_client, bot)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
-                        f"Internal Error please reach out to the team"
+                        f"Internal Error please reach out to the team",
+                        parse_mode="Markdown"
                     )
-                await update.message.reply_text(
-                    f"User added to bot successfully! \n\n",
-                    parse_mode="Markdown"
-                )
+                await update.message.reply_text(response, parse_mode="Markdown")
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"

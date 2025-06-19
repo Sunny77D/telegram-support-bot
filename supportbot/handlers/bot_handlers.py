@@ -96,3 +96,63 @@ async def handle_activate_bot_command(message: str, message_metadata: MessageMet
     except Exception as e:
         logger.error(f"An error occurred while activating the bot: {str(e)}")
         return "An error occurred while activating the bot. Please try again later."
+
+async def handle_add_user_to_bot_command(
+    message: str, 
+    message_metadata: MessageMetadata, 
+    supabase_client: Supabase,
+    bot: Bot,
+) -> str | None:
+    """
+    Handle the =support add user to bot: [USERNAME] command.
+    This function should interact with the Supabase client to add a user to the bot.
+    It will return a confirmation message upon successful addition or an error message if something goes wrong.
+    """
+
+    if bot.created_by != message_metadata.username:
+        return f"You do not have permission to add users to the bot '{bot.bot_name}'. Only the creator can add users."
+    
+    parts = message.split(':', 1)
+    if len(parts) < 2 or not parts[1].strip():
+        return "Please provide a valid username after 'add user to bot:'."
+
+    username_to_update = parts[1].strip()
+
+    # Check if the user exists
+    user_to_update = await supabase_client.get_row(
+        table='users',
+        primary_key='username',
+        primary_data=username_to_update
+    )
+
+    if not user_to_update:
+        # Add the user to the users table if they do not exist
+        user_metadata = {
+            'username': username_to_update,
+            'first_name': None,
+            'last_name': None,
+            'language_code': None,
+            'bot_id': bot.bot_id,  # Associate the bot with the user
+        }
+        result = await supabase_client.insert_row(
+            table='users',
+            dict=user_metadata
+        )
+    else:
+        # Update the user's bot_id
+        updated_data = {
+            'bot_id': bot.bot_id,
+        }
+        
+        result = await supabase_client.update_row(
+            table='users',
+            primary_key='username',
+            primary_data=username_to_update,
+            update_dict=updated_data
+        )
+
+    if result:
+        return f"User '{username_to_update}' has been successfully added to the bot {bot.bot_name}!"
+    else:
+        logger.error(f"Failed to add user '{username_to_update}' to the bot.")
+        return "An error occurred while adding the user to the bot. Please reach out to the team."

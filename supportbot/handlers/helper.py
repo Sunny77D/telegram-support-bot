@@ -23,7 +23,6 @@ async def get_user(user_metadata: User, supabase_client: Supabase) -> UserMetada
         primary_data=user_metadata.username
     )
     if row:
-        print(row)
         return UserMetadata(
             username=row['username'],
             first_name=row['first_name'],
