@@ -1,0 +1,4 @@
+You can simply use the bot by running `python3 bot.py` and it can answer any documentation questions you have! The following steps are for regenerating the embeddings:
+1. If you want to crawl pages, use the `crawl.py` script (command: `python3 crawl.py`). Change BASE_URL, URL_PREFIX and some of the current logic of how to handle recursive calls. This generated `url_to_all_text.pkl` file
+2. After crawling the pages, use `split_text_by_num_tokens.py` script to split or merge URL's based on the token size of their text. This creates the `url_splits_merges_to_text.pkl` file.
+3. Genererate the embeddings using `generate_embeddings.py`. This creates url_split_merges_to_embeddings.pkl` which is used with `url_splits_merges_to_text.pkl` by `bot.py` to do the k-nearest neighbor search and fetch relevant context when answering a question.
