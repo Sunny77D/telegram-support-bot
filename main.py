@@ -1,7 +1,7 @@
+# flake8: noqa
 """
 Support Telegram Bot
 """
-# flake8: noqa
 
 import logging
 import os
@@ -63,7 +63,7 @@ def check_environment():
     logger.info("✅ Environment check passed!")
     return True
 
-# Small Change
+
 def signal_handler(signum, frame):
     """Handle shutdown signals."""
     logger.info("Received shutdown signal")
