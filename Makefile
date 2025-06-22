@@ -8,6 +8,7 @@ pipcompile:
 	set -x && \
 	uv pip compile --annotation-style=line all-requirements.in -o all-requirements.txt --no-strip-extras && \
 	uv pip compile -c all-requirements.txt --annotation-style=line requirements.in -o requirements.txt --no-strip-extras && \
+	uv pip compile -c all-requirements.txt --annotation-style=line --unsafe-package setproctitle --unsafe-package psycopg2 dev-requirements.in -o dev-requirements.txt && \
 	perl -pi -e "s|-c all-requirements.txt, ||g" *.txt && \
 	perl -pi -e "s|, -c all-requirements.txt||g" *.txt && \
-	uv pip sync requirements.txt
+	uv pip sync dev-requirements.txt

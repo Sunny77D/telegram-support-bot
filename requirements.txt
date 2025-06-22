@@ -6,10 +6,13 @@ aiosignal==1.3.2          # via aiohttp
 annotated-types==0.7.0    # via pydantic
 anyio==4.9.0              # via httpx, openai
 attrs==25.3.0             # via aiohttp
+black==25.1.0             # via -r requirements.in
 certifi==2025.6.15        # via httpcore, httpx
+click==8.2.1              # via black
 deprecation==2.1.0        # via postgrest
 distro==1.9.0             # via openai
 dotenv==0.9.9             # via -r requirements.in
+flake8==7.3.0             # via -r requirements.in
 frozenlist==1.7.0         # via aiohttp, aiosignal
 gotrue==2.12.0            # via supabase
 h11==0.16.0               # via httpcore
@@ -20,15 +23,22 @@ httpx[http2]==0.28.1      # via gotrue, openai, postgrest, python-telegram-bot, 
 hyperframe==6.1.0         # via h2
 idna==3.10                # via anyio, httpx, yarl
 iniconfig==2.1.0          # via pytest
+isort==6.0.1              # via -r requirements.in
 jiter==0.10.0             # via openai
+mccabe==0.7.0             # via flake8
 multidict==6.5.0          # via aiohttp, yarl
+mypy-extensions==1.1.0    # via black
 openai==1.90.0            # via -r requirements.in
-packaging==25.0           # via deprecation, pytest
+packaging==25.0           # via black, deprecation, pytest
+pathspec==0.12.1          # via black
+platformdirs==4.3.8       # via black
 pluggy==1.6.0             # via pytest
 postgrest==1.0.2          # via supabase
 propcache==0.3.2          # via aiohttp, yarl
+pycodestyle==2.14.0       # via flake8
 pydantic==2.11.7          # via gotrue, openai, postgrest
 pydantic-core==2.33.2     # via pydantic
+pyflakes==3.4.0           # via flake8
 pygments==2.19.2          # via pytest
 pyjwt==2.10.1             # via gotrue
 pytest==8.4.1             # via pytest-mock
