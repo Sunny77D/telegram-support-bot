@@ -63,7 +63,7 @@ def check_environment():
     logger.info("✅ Environment check passed!")
     return True
 
-
+# Small Change
 def signal_handler(signum, frame):
     """Handle shutdown signals."""
     logger.info("Received shutdown signal")
