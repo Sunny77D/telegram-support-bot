@@ -81,7 +81,7 @@ def main():
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+# Random comment comment
     try:
         logger.info("Creating Telegram application...")
         # Create the Application
