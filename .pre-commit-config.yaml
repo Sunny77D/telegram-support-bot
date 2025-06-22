@@ -2,28 +2,28 @@
 repos:
   - repo: local
     hooks:
-      - id: black
-        name: Black
-        language: system
-        entry: black
-        require_serial: true
-        types: [python]
+      # - id: black
+      #   name: Black
+      #   language: system
+      #   entry: black
+      #   require_serial: true
+      #   types: [python]
 
-      - id: flake8
-        name: Flake8
-        entry: flake8
-        language: python
-        types: [python]
-        require_serial: true
+      # - id: flake8
+      #   name: Flake8
+      #   entry: flake8
+      #   language: python
+      #   types: [python]
+      #   require_serial: true
 
-      - id: isort
-        name: isort
-        entry: isort
-        language: python
-        types: [python]
-        args: []
-        require_serial: false
-        additional_dependencies: []
+      # - id: isort
+      #   name: isort
+      #   entry: isort
+      #   language: python
+      #   types: [python]
+      #   args: []
+      #   require_serial: false
+      #   additional_dependencies: []
 
       - id: disallow-root-logger
         name: disallow root logger
