@@ -9,12 +9,12 @@ repos:
       #   require_serial: true
       #   types: [python]
 
-      # - id: flake8
-      #   name: Flake8
-      #   entry: flake8
-      #   language: python
-      #   types: [python]
-      #   require_serial: true
+      - id: flake8
+        name: Flake8
+        entry: flake8
+        language: python
+        types: [python]
+        require_serial: true
 
       # - id: isort
       #   name: isort

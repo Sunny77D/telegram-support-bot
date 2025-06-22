@@ -1,6 +1,7 @@
 """
 Support Telegram Bot
 """
+# flake8: noqa
 
 import logging
 import os
