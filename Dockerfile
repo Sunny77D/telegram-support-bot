@@ -32,7 +32,7 @@ CMD ["python", "main.py"]
 ### Heroku release tasks.
 FROM base AS backend-release
 
-COPY --exclude=static/* . .
+COPY . .
 
 CMD ["/app/heroku/release.sh"]
 
