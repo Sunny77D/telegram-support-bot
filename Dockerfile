@@ -28,17 +28,3 @@ USER supportbotuser
 
 # Run the bot
 CMD ["python", "main.py"] 
-
-### Heroku release tasks.
-FROM base AS backend-release
-
-COPY . .
-
-CMD ["/app/heroku/release.sh"]
-
-### Heroku webapp.
-FROM base AS backend-web
-
-COPY . .
-
-CMD ["/app/heroku/web.sh"]
