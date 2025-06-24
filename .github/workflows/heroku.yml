@@ -1,0 +1,131 @@
+name: heroku
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch:
+env:
+  HEROKU_API_KEY: ${{ secrets.HEROKU_DEPLOY_API_TOKEN }}
+  HEROKU_DEPLOY_EMAIL: ${{ secrets.HEROKU_DEPLOY_EMAIL }}
+jobs:
+  test-build-container:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up containerd
+        # v3.1.0
+        uses: crazy-max/ghaction-setup-containerd@44268919722b46e48dfbf518f9020466a1c8368b
+
+
+      - name: Set up Docker Buildx
+        # v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2
+
+      - name: Build release image
+        # v6
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4
+        with:
+          context: .
+          push: false
+          target: backend-release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build web image
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4
+        with:
+          context: .
+          push: false
+          target: backend-web
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-container:
+    if: github.ref == 'refs/heads/main'
+    concurrency:
+      group: heroku-container-deploy/${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Log into Heroku registry
+        run: |
+          echo ${HEROKU_API_KEY} | docker login --username=${HEROKU_DEPLOY_EMAIL} registry.heroku.com --password-stdin
+
+      - name: Log into Heroku cli
+        # v3.12.14
+        uses: akhileshns/heroku-deploy@9fd0f9faae4aa93a38d6f5e25b9128589f1371b0
+        with:
+          heroku_api_key: ${{secrets.HEROKU_DEPLOY_API_TOKEN}}
+          heroku_app_name: "telegram-support-bot"
+          heroku_email: ${{secrets.HEROKU_DEPLOY_EMAIL}}
+          justlogin: true
+
+      - run: heroku auth:whoami
+
+      - name: Set up containerd
+        uses: crazy-max/ghaction-setup-containerd@44268919722b46e48dfbf518f9020466a1c8368b
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2
+
+      - name: Set up Github Env
+        run: |
+          echo "GH_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Build and push release image
+        id: build-push-release
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4
+        with:
+          provenance: false  # https://help.heroku.com/74S3XXMP
+          context: .
+          push: true
+          target: backend-release
+          tags: |
+            registry.heroku.com/telegram-support-bot:release-${{ env.GH_SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push web image
+        id: build-push-web
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4
+        with:
+          provenance: false
+          context: .
+          push: true
+          target: backend-web
+          tags: |
+            registry.heroku.com/telegram-support-bot:web-${{ env.GH_SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Send deploy start Slack notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$GITHUB_ACTOR triggered a deploy of <https://github.com/Artemis-xyz/gokustats-back-end/commits/$GITHUB_SHA|\`${GITHUB_SHA:0:8}\`>\"}" https://hooks.slack.com/services/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
+
+      - name: Deploy images
+        run: |
+          export RELEASE_IMAGE_ID="${{ steps.build-push-release.outputs.imageid }}"
+          export WEB_IMAGE_ID="${{ steps.build-push-web.outputs.imageid }}"
+          PAYLOAD="$(echo '{
+              "updates": [
+                {
+                  "type": "release",
+                  "docker_image": "$RELEASE_IMAGE_ID"
+                },
+                {
+                  "type": "web",
+                  "docker_image": "$WEB_IMAGE_ID"
+                }
+              ]
+            }' | envsubst)"
+          curl --netrc -X PATCH https://api.heroku.com/apps/telegram-support-bot/formation \
+            -d "$PAYLOAD" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3.docker-releases"
