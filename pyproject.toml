@@ -1,0 +1,18 @@
+[tool.ruff.lint]
+# Enable isort like behavior
+extend-select = ["I"]
+
+# Rules to ignore https://docs.astral.sh/ruff/rules/
+extend-ignore = [
+    "E731", # Do not assign a `lambda` expression, use a `def`
+]
+
+# Exclude .ipynb files
+exclude = ["*.ipynb"]
+
+[tool.ruff.format]
+# Set double quotes as default
+quote-style = "double"
+
+# Exclude .ipynb files
+exclude = ["*.ipynb"]

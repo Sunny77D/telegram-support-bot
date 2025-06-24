@@ -1,0 +1,10 @@
+. ./venv/bin/activate
+
+set -a
+. ./.env
+. ./.env.local
+set +a
+
+pip install uv==0.2.15
+uv pip sync dev-requirements.txt
+pre-commit install

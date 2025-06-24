@@ -1,0 +1,2 @@
+# This lets pip-tools resolve one compatible set of requirements first.
+-r requirements.in
