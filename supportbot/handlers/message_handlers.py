@@ -1,12 +1,19 @@
+# flake8: noqa
+import logging
 from dataclasses import asdict
+
 from telegram import Update
 from telegram.ext import ContextTypes
-import logging
-from supportbot.clients.messages.dataclasses import MessageMetadata, Message
+
+from supportbot.clients.messages.dataclasses import Message, MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.handlers.bot_handlers import handle_activate_bot_command, handle_add_user_to_bot_command, handle_build_bot_command
-from supportbot.handlers.helper import get_bot_for_chat, get_bot_for_user, get_user
-from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
+from supportbot.handlers.bot_handlers import (handle_activate_bot_command,
+                                              handle_add_user_to_bot_command,
+                                              handle_build_bot_command)
+from supportbot.handlers.helper import (get_bot_for_chat, get_bot_for_user,
+                                        get_user)
+from supportbot.handlers.ticket_handlers import (handle_ticket_create_command,
+                                                 handle_ticket_update_command)
 from agent_utils import send_message
 
 supabase_client = Supabase()
@@ -22,12 +29,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     message_text = update.message.text.strip()
     username = update.effective_sender.username
     chat_id = update.effective_chat.id
-    chat_name =  update.effective_chat.title if update.effective_chat.title else update.effective_chat.username
+    chat_name = update.effective_chat.title if update.effective_chat.title else update.effective_chat.username
     update_id = update.update_id
     message = update.message.text
 
     if not message:
         logger.warning("Received an empty message, skipping processing.")
+        return
+
+    if not username:
+        logger.warning("Received a message without a username, skipping processing.")
+        await update.message.reply_text(
+            "Error: You must have a username to use this bot. Please set a username in your Telegram settings.",
+            parse_mode="Markdown"
+        )
         return
 
     user = await get_user(update.effective_user, supabase_client)
@@ -42,6 +57,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             f"please reach out to the Support Bot Team or the creator of the bot you would like to join.",
             parse_mode="Markdown"
         )
+        return
 
     bot = await get_bot_for_user(username, supabase_client)
 
@@ -136,11 +152,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     f"Note: You can only have one bot attached per account\n",
                     parse_mode="Markdown"
                 )
+                return
     except Exception as e:
         await update.message.reply_text(
             f"Error: {str(e)}\n\n"
             f"Internal Error please reach out to the team"
         )
+        return
+    return
 
 
 # Handles messages in group chats where the bot is added
@@ -236,6 +255,8 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             f"Error: {str(e)}\n\n"
             f"Internal Error please reach out to the team"
         )
+        return
+    return
 
 
 # TODO: This is to handle the welcome message when the bot is added to a group chat.
