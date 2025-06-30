@@ -7,6 +7,7 @@ from supportbot.clients.supabase.supabase_client import Supabase
 from supportbot.handlers.bot_handlers import handle_activate_bot_command, handle_add_user_to_bot_command, handle_build_bot_command
 from supportbot.handlers.helper import get_bot_for_chat, get_bot_for_user, get_user
 from supportbot.handlers.ticket_handlers import handle_ticket_create_command, handle_ticket_update_command
+from agent_utils import send_message
 
 supabase_client = Supabase()
 logger = logging.getLogger(__name__)
@@ -111,6 +112,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         parse_mode="Markdown"
                     )
                 await update.message.reply_text(response, parse_mode="Markdown")
+            case "question":
+                url_to_embedding = context.bot_data.get("url_to_embedding")
+                url_to_text = context.bot_data.get("url_to_text")
+                message_history = context.bot_data.get("message_history")
+                response = await handle_question_command(stripped_message, url_to_embedding, url_to_text, message_history)
+                if not response:
+                    await update.message.reply_text(
+                        f"Error: No Reponse\n\n"
+                        f"Internal Error please reach out to the team"
+                    )
+                else:
+                    await update.message.reply_text(response, parse_mode="Markdown")
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
@@ -322,3 +335,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         • `Track XYZ`
     """
     await update.message.reply_text(help_text, parse_mode='Markdown')
+
+async def handle_question_command(
+    message: str, 
+    url_to_embedding: dict[str, list[float]],
+    url_to_text: dict[str, str],
+    message_history: list[str],
+) -> str | None:
+    try:
+        return send_message(message, url_to_embedding, url_to_text, message_history)
+    except ValueError as e:
+        logger.error(f"Error in handle_question_command: {str(e)}")
+        return "An error occurred while processing your question. Please try again later."
+    
+

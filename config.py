@@ -18,3 +18,5 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/supportbot.log")
 
 SUPABASE_URL = os.getenv("SUPABASE_PROJECT_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_PROJECT_KEY")
+
+OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY")
