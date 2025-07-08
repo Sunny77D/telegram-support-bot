@@ -15,6 +15,8 @@ from supportbot.handlers.helper import (get_bot_for_chat, get_bot_for_user,
 from supportbot.handlers.ticket_handlers import (handle_ticket_create_command,
                                                  handle_ticket_update_command)
 from agent_utils import send_message
+import json
+from message_history_utils import get_message_history
 
 supabase_client = Supabase()
 logger = logging.getLogger(__name__)
@@ -140,6 +142,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 else:
                     await update.message.reply_text(response, parse_mode="Markdown")
+            case "fetch_my_messages":
+                message_history_list = await get_message_history()
+                for message_history in message_history_list:
+                    message_history_data = {
+                        'chat_id': message_history.chat_id,
+                        'chat_name': message_history.chat_name,
+                        'owner_username': message_metadata.username,
+                        'bot_id': bot.bot_id,
+                        'chat_history': json.dumps(message_history.chat_history),
+                        'chat_member_ids': json.dumps(message_history.chat_member_ids),
+                    }
+                    result = await supabase_client.insert_row(table='message_history', dict=message_history_data)
+                    if result is None:
+                        await update.message.reply_text(
+                            "Could not upload message history for chat " + message_metadata.chat_name,
+                        )
+                await update.message.reply_text(
+                    "Message history has been successfully uploaded for all the chats you are a member of.\n"
+                    "The bot now has access to more knowledge based on your previous chats when users ask questions!\n"
+                )
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
@@ -149,6 +171,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     f"  2. =support update [ticket_id] in progress|done",
                     f"  3. =support build bot: [BOT_NAME]\n"
                     f"  4. =support add user: [username] to bot: [BOT_NAME]\n"
+                    f"  5. =support question: [your question]\n"
+                    f"  6. =support fetch_my_messages\n"
                     f"Note: You can only have one bot attached per account\n",
                     parse_mode="Markdown"
                 )
