@@ -5,8 +5,6 @@ import tiktoken
 from supportbot.clients.crawl.dataclasses import CrawlChunk
 from supportbot.clients.supabase.supabase_client import Supabase
 import asyncio
-import sys
-import os
 
 BASE_URL = "https://app.artemis.xyz/docs/overview"
 URL_PREFIX = "https://app.artemis.xyz"
@@ -14,9 +12,6 @@ MAX_TOKEN_PAGE = 30000
 MAX_TOKEN_LIMIT = 2000 # The maximum number of tokens for embeddings is 8192, but we use a lower limit to avoid issues with long texts.
 OVERLAP_TOKEN_SIZE = 200 # The overlap size to ensure context is preserved when splitting text.
 MAX_CRAWL_PAGES = 5  # Limit the number of pages to crawl
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(ROOT_DIR)
 
 def clean_text(html):
     soup = BeautifulSoup(html, "html.parser")
