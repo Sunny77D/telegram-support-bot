@@ -7,3 +7,6 @@ flake8
 isort
 scipy
 telethon
+bs4
+requests
+tiktoken
