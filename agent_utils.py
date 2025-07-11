@@ -19,6 +19,7 @@ def get_embedding(text, model="text-embedding-3-small"):
 def send_message(
         message : str, 
         crawls_chunks_text_and_embedding : list[ChunkAndEmbedding],
+        message_chunks_text_and_embedding : list[ChunkAndEmbedding],
         message_history : list[str], 
         message_history_size : int = 5
     ) -> str:
@@ -26,24 +27,30 @@ def send_message(
     if message_embedding is None:
         raise ValueError("Could not get embedding for the message.")
     retrived_content = get_top_k_similar_text(message_embedding, crawls_chunks_text_and_embedding)
+    retrived_relevant_message_chunks = get_top_k_similar_text(message_embedding, message_chunks_text_and_embedding)
     previous_messages = "\n".join(message_history[-message_history_size:])
     if previous_messages:
         previous_messages_embedding = get_embedding(previous_messages)
         previous_messages_retrieved_content = get_top_k_similar_text(previous_messages_embedding, crawls_chunks_text_and_embedding)
+        previous_messages_retrieved_relevant_message_chunks = get_top_k_similar_text(previous_messages_embedding, message_chunks_text_and_embedding)
     else:
         previous_messages_retrieved_content = ""
+        previous_messages_retrieved_relevant_message_chunks = ""
     
     prompt = f"""You are a helpful assistant answering based on documentation.
-    Answer the question based on the relevant documentation above.
+    Answer the question based on the relevant documentation and historical context below.
     Limit your answer to 200 words by summarizing. In case the user is vague, ask for clarification.
     If the question is not relevant to the documentation, say "I don't know".
-    Relevant documentation:
-    {retrived_content}
-    {previous_messages_retrieved_content}
     Question:
     {message}
     Previous questions and answers:
     {previous_messages}
+    Relevant documentation:
+    {retrived_content}
+    {previous_messages_retrieved_content}
+    Relevant historical context from other conversations:
+    {retrived_relevant_message_chunks}
+    {previous_messages_retrieved_relevant_message_chunks}
     """
     client = OpenAI(api_key=OPEN_AI_API_KEY)
     response = client.chat.completions.create(
@@ -64,16 +71,20 @@ def get_top_k_similar_text(query_embedding, chunks_text_and_embedding, k=5):
     best_chunks = list(map(lambda x : x[0], similarities[:k]))
     return "\n".join(best_chunks)
 
-def get_crawls_chunks_text_and_embedding() -> list[ChunkAndEmbedding]:
+def get_chunks_text_and_embedding(
+    table_name: str, 
+    chunk_column_name: str = 'chunk', 
+    embedding_column_name: str = 'chunk_embedding'
+    ) -> list[ChunkAndEmbedding]:
     supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
     response = (
-        supabase_client.table("crawled_url_chunks")
-        .select("chunk, chunk_embedding")
-        .not_.is_('chunk_embedding', None)
+        supabase_client.table(table_name)
+        .select(f"{chunk_column_name}, {embedding_column_name}")
+        .not_.is_(embedding_column_name, None)
         .execute()
     )
     rows = response.data
-    return map(lambda row: ChunkAndEmbedding(
-        chunk=row['chunk'],
-        embedding=row['chunk_embedding']
-    ), rows)
+    return list(map(lambda row: ChunkAndEmbedding(
+        chunk=row[chunk_column_name],
+        embedding=row[embedding_column_name]
+    ), rows))

@@ -14,7 +14,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from supportbot.handlers.message_handlers import (handle_group_message,
                                                   handle_message, help_command,
                                                   welcome_message)
-from agent_utils import get_crawls_chunks_text_and_embedding
+from agent_utils import get_chunks_text_and_embedding
 
 # Load environment variables
 load_dotenv()
@@ -115,7 +115,8 @@ def main():
             MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_message)
         )
 
-        application.bot_data["crawls_chunks_text_and_embedding"] = get_crawls_chunks_text_and_embedding()
+        application.bot_data["crawls_chunks_text_and_embedding"] = get_chunks_text_and_embedding('crawled_url_chunks')
+        application.bot_data["message_chunks_text_and_embedding"] = get_chunks_text_and_embedding('message_history_chunks')
         application.bot_data["message_history"] = []
 
         # Start the bot
