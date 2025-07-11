@@ -17,6 +17,7 @@ from supportbot.handlers.ticket_handlers import (handle_ticket_create_command,
 from agent_utils import send_message
 import json
 from message_history_utils import get_message_history
+from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 
 supabase_client = Supabase()
 logger = logging.getLogger(__name__)
@@ -131,10 +132,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 await update.message.reply_text(response, parse_mode="Markdown")
             case "question":
-                url_to_embedding = context.bot_data.get("url_to_embedding")
-                url_to_text = context.bot_data.get("url_to_text")
+                chunks_text_and_embedding = context.bot_data.get("chunks_text_and_embedding")
                 message_history = context.bot_data.get("message_history")
-                response = await handle_question_command(stripped_message, url_to_embedding, url_to_text, message_history)
+                response = await handle_question_command(stripped_message, chunks_text_and_embedding, message_history)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
@@ -383,12 +383,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def handle_question_command(
     message: str, 
-    url_to_embedding: dict[str, list[float]],
-    url_to_text: dict[str, str],
+    chunks_text_and_embedding : list[ChunkAndEmbedding],
     message_history: list[str],
 ) -> str | None:
     try:
-        return send_message(message, url_to_embedding, url_to_text, message_history)
+        return send_message(message, chunks_text_and_embedding, message_history)
     except ValueError as e:
         logger.error(f"Error in handle_question_command: {str(e)}")
         return "An error occurred while processing your question. Please try again later."

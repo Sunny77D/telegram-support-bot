@@ -14,7 +14,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from supportbot.handlers.message_handlers import (handle_group_message,
                                                   handle_message, help_command,
                                                   welcome_message)
-import pickle
+from agent_utils import get_chunks_text_and_embedding
 
 # Load environment variables
 load_dotenv()
@@ -115,12 +115,7 @@ def main():
             MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_message)
         )
 
-        with open("agent_code/url_split_merges_to_embedding.pkl", "rb") as f:
-            url_to_embedding = pickle.load(f)
-        with open("agent_code/url_splits_merges_to_text.pkl", "rb") as f:
-            url_to_text = pickle.load(f)
-        application.bot_data["url_to_embedding"] = url_to_embedding
-        application.bot_data["url_to_text"] = url_to_text
+        application.bot_data["chunks_text_and_embedding"] = get_chunks_text_and_embedding()
         application.bot_data["message_history"] = []
 
         # Start the bot
