@@ -1,9 +1,8 @@
 from openai import OpenAI
 from scipy.spatial.distance import cosine
-from config import OPEN_AI_API_KEY
 from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 from supabase import create_client
-from config import SUPABASE_KEY, SUPABASE_URL
+from config import SUPABASE_KEY, SUPABASE_URL, OPEN_AI_API_KEY
 
 def get_embedding(text, model="text-embedding-3-small"):
     client = OpenAI(api_key=OPEN_AI_API_KEY)

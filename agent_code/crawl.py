@@ -78,7 +78,7 @@ if __name__ == "__main__":
             }
             result = await supabase_client.insert_row(table='crawled_url_chunks', dict=crawled_chunk_data)
             if result is None:
-                print(f"Failed to insert chunk to DB: {crawled_chunk.url} - {crawled_chunk.chunk_id}")
+                print(f"Failed to insert chunk to DB: {crawled_chunk.identifier} - {crawled_chunk.chunk_id}")
 
     asyncio.run(insert_chunks())
         
