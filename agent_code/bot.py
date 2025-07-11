@@ -10,8 +10,8 @@ MESSAGE_HISTORY = []  # List to store the last messages and answers
 def message_handler(update: Update, context: CallbackContext) -> None:
     current_message = update.message.text
     print(f'{update.message.from_user.first_name} wrote {current_message}')
-    chunks_text_and_embedding = agent_utils.get_chunks_text_and_embedding()
-    response_message = agent_utils.send_message(current_message, chunks_text_and_embedding, MESSAGE_HISTORY, MESSAGE_HISTORY_SIZE)
+    crawls_chunks_text_and_embedding = agent_utils.get_crawls_chunks_text_and_embedding()
+    response_message = agent_utils.send_message(current_message, crawls_chunks_text_and_embedding, MESSAGE_HISTORY, MESSAGE_HISTORY_SIZE)
     update.message.reply_text(response_message)
     MESSAGE_HISTORY.append(f"User: {current_message}\nAssistant: {response_message}")
 

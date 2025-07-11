@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 @dataclass
-class CrawlChunk:
-    url: str
+class GenericChunk:
+    identifier: str
     chunk_id: int
     text: str
 

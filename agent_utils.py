@@ -19,18 +19,18 @@ def get_embedding(text, model="text-embedding-3-small"):
 
 def send_message(
         message : str, 
-        chunks_text_and_embedding : list[ChunkAndEmbedding],
+        crawls_chunks_text_and_embedding : list[ChunkAndEmbedding],
         message_history : list[str], 
         message_history_size : int = 5
     ) -> str:
     message_embedding = get_embedding(message)
     if message_embedding is None:
         raise ValueError("Could not get embedding for the message.")
-    retrived_content = get_top_k_similar_text(message_embedding, chunks_text_and_embedding)
+    retrived_content = get_top_k_similar_text(message_embedding, crawls_chunks_text_and_embedding)
     previous_messages = "\n".join(message_history[-message_history_size:])
     if previous_messages:
         previous_messages_embedding = get_embedding(previous_messages)
-        previous_messages_retrieved_content = get_top_k_similar_text(previous_messages_embedding, chunks_text_and_embedding)
+        previous_messages_retrieved_content = get_top_k_similar_text(previous_messages_embedding, crawls_chunks_text_and_embedding)
     else:
         previous_messages_retrieved_content = ""
     
@@ -65,7 +65,7 @@ def get_top_k_similar_text(query_embedding, chunks_text_and_embedding, k=5):
     best_chunks = list(map(lambda x : x[0], similarities[:k]))
     return "\n".join(best_chunks)
 
-def get_chunks_text_and_embedding() -> list[ChunkAndEmbedding]:
+def get_crawls_chunks_text_and_embedding() -> list[ChunkAndEmbedding]:
     supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
     response = (
         supabase_client.table("crawled_url_chunks")
