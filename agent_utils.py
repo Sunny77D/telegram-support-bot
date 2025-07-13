@@ -1,8 +1,15 @@
+import logging
+import time
+
 from openai import OpenAI
 from scipy.spatial.distance import cosine
-from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 from supabase import create_client
-from config import SUPABASE_KEY, SUPABASE_URL, OPEN_AI_API_KEY
+
+from config import OPEN_AI_API_KEY, SUPABASE_KEY, SUPABASE_URL
+from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
+
+logger = logging.getLogger(__name__)
+
 
 def get_embedding(text, model="text-embedding-3-small"):
     client = OpenAI(api_key=OPEN_AI_API_KEY)
@@ -11,18 +18,20 @@ def get_embedding(text, model="text-embedding-3-small"):
             input=text,
             model=model
         )
+        time.sleep(1)  # Uncomment if you need to add a delay
         return response.data[0].embedding
     except Exception as e:
-        print(f"Error embedding text: {e}")
+        logger.error(f"Error getting embedding: {str(e)}")
         return None
 
-def send_message(
-        message : str, 
-        crawls_chunks_text_and_embedding : list[ChunkAndEmbedding],
-        message_chunks_text_and_embedding : list[ChunkAndEmbedding],
-        message_history : list[str], 
-        message_history_size : int = 5
-    ) -> str:
+
+async def send_message(
+    message: str,
+    crawls_chunks_text_and_embedding: list[ChunkAndEmbedding],
+    message_chunks_text_and_embedding: list[ChunkAndEmbedding],
+    message_history: list[str],
+    message_history_size: int = 5
+) -> str:
     message_embedding = get_embedding(message)
     if message_embedding is None:
         raise ValueError("Could not get embedding for the message.")
@@ -36,7 +45,7 @@ def send_message(
     else:
         previous_messages_retrieved_content = ""
         previous_messages_retrieved_relevant_message_chunks = ""
-    
+
     prompt = f"""You are a helpful assistant answering based on documentation.
     Answer the question based on the relevant documentation and historical context below.
     Limit your answer to 200 words by summarizing. In case the user is vague, ask for clarification.
@@ -61,6 +70,7 @@ def send_message(
     message_history.append(f"User: {message}\nAssistant: {response_message}")
     return response_message
 
+
 # Given a query embedding, compute the text of all the documentation pages which are the most relevant to the query.
 def get_top_k_similar_text(query_embedding, chunks_text_and_embedding, k=5):
     similarities = []
@@ -68,14 +78,15 @@ def get_top_k_similar_text(query_embedding, chunks_text_and_embedding, k=5):
         sim = 1 - cosine(query_embedding, chunk.embedding)  # cosine similarity
         similarities.append((chunk.chunk, sim))
     similarities.sort(key=lambda x: x[1], reverse=True)
-    best_chunks = list(map(lambda x : x[0], similarities[:k]))
+    best_chunks = list(map(lambda x: x[0], similarities[:k]))
     return "\n".join(best_chunks)
 
+
 def get_chunks_text_and_embedding(
-    table_name: str, 
-    chunk_column_name: str = 'chunk', 
+    table_name: str,
+    chunk_column_name: str = 'chunk',
     embedding_column_name: str = 'chunk_embedding'
-    ) -> list[ChunkAndEmbedding]:
+) -> list[ChunkAndEmbedding]:
     supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
     response = (
         supabase_client.table(table_name)

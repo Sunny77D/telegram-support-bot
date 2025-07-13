@@ -1,10 +1,14 @@
 # flake8: noqa
+import json
 import logging
 from dataclasses import asdict
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from agent_utils import send_message
+from message_history_utils import get_message_history
+from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 from supportbot.clients.messages.dataclasses import Message, MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
 from supportbot.handlers.bot_handlers import (handle_activate_bot_command,
@@ -14,10 +18,6 @@ from supportbot.handlers.helper import (get_bot_for_chat, get_bot_for_user,
                                         get_user)
 from supportbot.handlers.ticket_handlers import (handle_ticket_create_command,
                                                  handle_ticket_update_command)
-from agent_utils import send_message
-import json
-from message_history_utils import get_message_history
-from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 
 supabase_client = Supabase()
 logger = logging.getLogger(__name__)
@@ -264,17 +264,33 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             case "activate":
                 response = await handle_activate_bot_command(stripped_message, message_metadata, supabase_client)
                 await update.message.reply_text(response, parse_mode="Markdown")
+                return
+            case "question":
+                crawls_chunks_text_and_embedding = context.bot_data.get("crawls_chunks_text_and_embedding")
+                message_chunks_text_and_embedding = context.bot_data.get("message_chunks_text_and_embedding")
+                message_history = context.bot_data.get("message_history")
+                response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+                if not response:
+                    await update.message.reply_text(
+                        f"Error: No Reponse\n\n"
+                        f"Internal Error please reach out to the team"
+                    )
+                else:
+                    await update.message.reply_text(response, parse_mode="Markdown")
+                return
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
                     f" The previous command was {full_command_text}\n"
                     f" Please only give one of the following commands:\n\n"
-                    f"  1. =support create ticket Title: [title] Description: [description]"
-                    f"  2. =support update ticket [ticket_id] in progress|resolved\n",
+                    f"  1. =support create ticket Title: [title] Description: [description]\n"
+                    f"  2. =support update ticket [ticket_id] in progress|resolved\n"
                     f"  3. =support activate\n"
+                    f"  4. =support question: [your question]\n"
                     f"Note: You can only have one bot attached per account\n",
                     parse_mode="Markdown"
                 )
+                return
     except Exception as e:
         await update.message.reply_text(
             f"Error: {str(e)}\n\n"
@@ -389,7 +405,7 @@ async def handle_question_command(
     message_history: list[str],
 ) -> str | None:
     try:
-        return send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+        return await send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
     except ValueError as e:
         logger.error(f"Error in handle_question_command: {str(e)}")
         return "An error occurred while processing your question. Please try again later."
