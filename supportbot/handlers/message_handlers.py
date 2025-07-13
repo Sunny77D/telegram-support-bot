@@ -405,7 +405,7 @@ async def handle_question_command(
     message_history: list[str],
 ) -> str | None:
     try:
-        return send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+        return await send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
     except ValueError as e:
         logger.error(f"Error in handle_question_command: {str(e)}")
         return "An error occurred while processing your question. Please try again later."
