@@ -1,10 +1,12 @@
-from dataclasses import asdict
 import datetime
 import logging
+from dataclasses import asdict
 
 from supportbot.clients.messages.dataclasses import MessageMetadata
 from supportbot.clients.supabase.supabase_client import Supabase
-from supportbot.clients.tickets.dataclasses import CreateTicketRecord, CreateTicketResponse, Ticket
+from supportbot.clients.tickets.dataclasses import (CreateTicketRecord,
+                                                    CreateTicketResponse,
+                                                    Ticket)
 from supportbot.clients.tickets.ticket_client import TicketParser
 from supportbot.dataclasses import Bot
 
@@ -70,7 +72,7 @@ async def handle_ticket_create_command(message: str, message_metadata : MessageM
             chat_id=result['chat_id'],
             chat_name=result['chat_name'],
             created_by=result.get("created_by", 'anon'),
-            created_at = result["created_at"],
+            created_at=result["created_at"],
             bot_name=bot.bot_name
         )
         if response_obj:
@@ -83,7 +85,7 @@ async def handle_ticket_update_command(message: str, message_metadata: MessageMe
     # Try to parse status update command first
     status_update = TicketParser.parse_status_update_command(message)
     if not status_update:
-        return "Error: Invalid status update command format. Use `update ticket_id: [ID] status: [status]`."
+        return "Error: Invalid status update command format. Use `update ticket_id: [ID] status: [in progress | resolved]`."
 
     ticket = await supabase_client.get_row(
         table='tickets',
@@ -92,7 +94,7 @@ async def handle_ticket_update_command(message: str, message_metadata: MessageMe
     )
     if not ticket:
         return f"Error: Ticket with ID `{status_update['ticket_id']}` not found."
-    
+
     ticket = Ticket(**ticket)
     if ticket.status == status_update['status']:
         return f"Error: Ticket with ID `{status_update['ticket_id']}` is already in status `{status_update['status']}`"
