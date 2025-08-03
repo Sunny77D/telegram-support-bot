@@ -12,6 +12,7 @@ from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 from supportbot.clients.messages.dataclasses import Message, MessageMetadata
 from supportbot.clients.messages.messages_client import MessageClient
 from supportbot.clients.supabase.supabase_client import Supabase
+from supportbot.clients.tickets.ticket_client import TicketClient
 from supportbot.handlers.bot_handlers import (handle_activate_bot_command,
                                               handle_add_user_to_bot_command,
                                               handle_build_bot_command)
@@ -83,7 +84,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     support_prefix = message.strip()[0:9]
     stripped_message = message.strip()[9:]
-    command = stripped_message.split(" ")[0].lower()
+    if " " in stripped_message:
+        command = stripped_message.split(" ")[0].lower()
+    else:
+        command = stripped_message.lower()
     full_command_text = support_prefix + command
     message_metadata = MessageMetadata(username=username, chat_id=chat_id, chat_name=chat_name, update_id=update_id)
     try:
@@ -111,11 +115,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     return
                 bot_built = await handle_build_bot_command(stripped_message, message_metadata, supabase_client)
                 if not bot_built:
-                    await update.message.reply_text(
+                    return await update.message.reply_text(
                         f"Error: No Reponse\n\n"
                         f"Internal Error please reach out to the team"
                     )
-                await update.message.reply_text(
+                return await update.message.reply_text(
                     f" {bot_built} \n\n"
                     f" You can now add the bot to a group chat and start using it.\n"
                     f" Use the following command to add more user to the bot: \n"
@@ -126,12 +130,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             case "add":
                 response = await handle_add_user_to_bot_command(stripped_message, message_metadata, supabase_client, bot)
                 if not response:
-                    await update.message.reply_text(
+                    return await update.message.reply_text(
                         f"Error: No Reponse\n\n"
                         f"Internal Error please reach out to the team",
                         parse_mode="Markdown"
                     )
-                await update.message.reply_text(response, parse_mode="Markdown")
+                return await update.message.reply_text(response, parse_mode="Markdown")
             case "question":
                 crawls_chunks_text_and_embedding = context.bot_data.get("crawls_chunks_text_and_embedding")
                 message_chunks_text_and_embedding = context.bot_data.get("message_chunks_text_and_embedding")
@@ -142,12 +146,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 user_message_history = await message_client.get_user_messsage_history(username, limit=20)
                 response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history, chat_message_history_postgres, user_message_history)
                 if not response:
-                    await update.message.reply_text(
+                    return await update.message.reply_text(
                         f"Error: No Reponse\n\n"
                         f"Internal Error please reach out to the team"
                     )
                 else:
-                    await update.message.reply_text(response, parse_mode="Markdown")
+                    return await update.message.reply_text(response, parse_mode="Markdown")
             case "fetch_my_messages":
                 message_history_list = await get_message_history()
                 for message_history in message_history_list:
@@ -161,13 +165,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     }
                     result = await supabase_client.insert_row(table='message_history', dict=message_history_data)
                     if result is None:
-                        await update.message.reply_text(
+                        return await update.message.reply_text(
                             "Could not upload message history for chat " + message_metadata.chat_name,
                         )
-                await update.message.reply_text(
+                return await update.message.reply_text(
                     "Message history has been successfully uploaded for all the chats you are a member of.\n"
                     "The bot now has access to more knowledge based on your previous chats when users ask questions!\n"
                 )
+            case "tickets":
+                ticket_client = TicketClient()
+                open_tickets = await ticket_client.get_open_tickets_for_bot(bot.bot_id)
+                in_progress_tickets = await ticket_client.get_in_progress_tickets_for_bot(bot.bot_id)
+                recent_closed_tickets = await ticket_client.get_closed_tickets_for_bot(bot.bot_id, limit=5)
+                if not open_tickets and not recent_closed_tickets and not in_progress_tickets:
+                    return await update.message.reply_text(
+                        "No open or recent closed tickets found for this bot."
+                    )
+                response = "Here are the tickets for this bot:\n"
+                if open_tickets:
+                    response += "Open Tickets:\n"
+                    for ticket in open_tickets:
+                        response += f"ID: {ticket.id}, Title: {ticket.title}, Status: {ticket.status}, Chat: {ticket.chat_name}, Created At: {ticket.created_at}, Last Updated: {ticket.updated_at}\n"
+                        response += f"Description: {ticket.description}\n\n"
+                if in_progress_tickets:
+                    response += "In Progress Tickets:\n"
+                    for ticket in in_progress_tickets:
+                        response += f"ID: {ticket.id}, Title: {ticket.title}, Status: {ticket.status}, Chat: {ticket.chat_name}, Created At: {ticket.created_at}, Last Updated: {ticket.updated_at}, Last Updated By: {ticket.updated_by}\n"
+                        response += f"Description: {ticket.description}\n\n"
+                if recent_closed_tickets:
+                    response += "Recent Closed Tickets:\n"
+                    for ticket in recent_closed_tickets:
+                        response += f"ID: {ticket.id}, Title: {ticket.title}, Status: {ticket.status}, Chat: {ticket.chat_name}, Created At: {ticket.created_at}, Last Updated: {ticket.updated_at}\n"
+                        response += f"Description: {ticket.description}\n\n"
+                return await update.message.reply_text(response)
             case _:
                 await update.message.reply_text(
                     f" Command is not recognize \n\n"
@@ -179,6 +209,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     f"  4. =support add user: [username] to bot: [BOT_NAME]\n"
                     f"  5. =support question: [your question]\n"
                     f"  6. =support fetch_my_messages\n"
+                    f"  7. =support tickets\n"
                     f"Note: You can only have one bot attached per account\n",
                     parse_mode="Markdown"
                 )
