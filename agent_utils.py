@@ -7,6 +7,7 @@ from supabase import create_client
 
 from config import OPEN_AI_API_KEY, SUPABASE_KEY, SUPABASE_URL
 from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
+from supportbot.clients.messages.dataclasses import Message
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,9 @@ async def send_message(
     crawls_chunks_text_and_embedding: list[ChunkAndEmbedding],
     message_chunks_text_and_embedding: list[ChunkAndEmbedding],
     message_history: list[str],
-    message_history_size: int = 5
+    message_history_size: int = 5,
+    chat_message_history: list[Message] | None = None,
+    user_message_history: list[Message] | None = None
 ) -> str:
     message_embedding = get_embedding(message)
     if message_embedding is None:
@@ -61,6 +64,14 @@ async def send_message(
     {retrived_relevant_message_chunks}
     {previous_messages_retrieved_relevant_message_chunks}
     """
+    if chat_message_history:
+        prompt += "\nThis the last few messages from the current chat feel free to use this to answer the question:"
+        for chat_message in chat_message_history:
+            prompt += f"\n{chat_message.message} (from {chat_message.chat_name}) at {chat_message.created_at if chat_message.created_at else 'unknown time'}"
+    if user_message_history:
+        prompt += "\nThis the last few messages from the current user across all chats asking the question ONLY use this IF it answers the question the information below is very sensitive:"
+        for user_message in user_message_history:
+            prompt += f"\n{user_message.message} (from {user_message.username}) at {user_message.created_at if user_message.created_at else 'unknown time'} from the chat {user_message.chat_name}"
     client = OpenAI(api_key=OPEN_AI_API_KEY)
     response = client.chat.completions.create(
         model="gpt-4o-mini",

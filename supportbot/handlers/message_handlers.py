@@ -10,6 +10,7 @@ from agent_utils import send_message
 from message_history_utils import get_message_history
 from supportbot.clients.crawl.dataclasses import ChunkAndEmbedding
 from supportbot.clients.messages.dataclasses import Message, MessageMetadata
+from supportbot.clients.messages.messages_client import MessageClient
 from supportbot.clients.supabase.supabase_client import Supabase
 from supportbot.handlers.bot_handlers import (handle_activate_bot_command,
                                               handle_add_user_to_bot_command,
@@ -135,7 +136,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 crawls_chunks_text_and_embedding = context.bot_data.get("crawls_chunks_text_and_embedding")
                 message_chunks_text_and_embedding = context.bot_data.get("message_chunks_text_and_embedding")
                 message_history = context.bot_data.get("message_history")
-                response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+                message_client = MessageClient()
+                # Fetch chat history from the database
+                chat_message_history_postgres = await message_client.get_chat_history(chat_id, limit=10)
+                user_message_history = await message_client.get_user_messsage_history(username, limit=20)
+                response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history, chat_message_history_postgres, user_message_history)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
@@ -269,7 +274,11 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
                 crawls_chunks_text_and_embedding = context.bot_data.get("crawls_chunks_text_and_embedding")
                 message_chunks_text_and_embedding = context.bot_data.get("message_chunks_text_and_embedding")
                 message_history = context.bot_data.get("message_history")
-                response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+                message_client = MessageClient()
+                # Fetch chat history from the database
+                chat_message_history_postgres = await message_client.get_chat_history(chat_id, limit=10)
+                user_message_history = await message_client.get_user_messsage_history(username, limit=20)
+                response = await handle_question_command(stripped_message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history, chat_message_history_postgres, user_message_history)
                 if not response:
                     await update.message.reply_text(
                         f"Error: No Reponse\n\n"
@@ -403,9 +412,11 @@ async def handle_question_command(
     crawls_chunks_text_and_embedding : list[ChunkAndEmbedding],
     message_chunks_text_and_embedding : list[ChunkAndEmbedding],
     message_history: list[str],
+    chat_message_history: list[Message] | None = None,
+    user_message_history: list[Message] | None = None
 ) -> str | None:
     try:
-        return await send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history)
+        return await send_message(message, crawls_chunks_text_and_embedding, message_chunks_text_and_embedding, message_history, message_history_size=5, chat_message_history=chat_message_history, user_message_history=user_message_history)
     except ValueError as e:
         logger.error(f"Error in handle_question_command: {str(e)}")
         return "An error occurred while processing your question. Please try again later."
