@@ -23,7 +23,7 @@ def split_text_by_num_tokens(text : str, max_tokens=MAX_TOKEN_LIMIT, overlap=OVE
     tokens = encoding.encode(text)
     i = 0
     while i < len(tokens):
-        chunks.append(encoding.decode(tokens[i:max(len(tokens), i + max_tokens)]))
+        chunks.append(encoding.decode(tokens[i:min(len(tokens), i + max_tokens)]))
         if i + max_tokens >= len(tokens):
             break
         i += (max_tokens - overlap)

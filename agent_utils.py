@@ -19,7 +19,7 @@ def get_embedding(text, model="text-embedding-3-small"):
             input=text,
             model=model
         )
-        time.sleep(1)  # Uncomment if you need to add a delay
+        #time.sleep(1)  # Uncomment if you need to add a delay
         return response.data[0].embedding
     except Exception as e:
         logger.error(f"Error getting embedding: {str(e)}")

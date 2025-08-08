@@ -32,11 +32,13 @@ class MessageChunkifier:
                     'chunk': chunk,
                     'chunk_number': i,
                 })
-        response = (
-            self.supabase_client.table("message_history_chunks")
-            .insert(message_history_chunks)
-            .execute()
-        )
+        for i in range(0, len(message_history_chunks), 30):
+            message_history_chunks_chunk = message_history_chunks[i:i+30]
+            response = (
+                self.supabase_client.table("message_history_chunks")
+                .insert(message_history_chunks_chunk)
+                .execute()
+            )
         print(f"Inserted {len(message_history_chunks)} chunks")
 
 async def main():

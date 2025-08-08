@@ -2,7 +2,7 @@ from agent_utils import get_embedding
 from supabase import create_client
 from config import SUPABASE_KEY, SUPABASE_URL
 
-CHUNK_DB = "crawled_url_chunks"
+CHUNK_DB = "message_history_chunks"
 
 supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
 response = (
