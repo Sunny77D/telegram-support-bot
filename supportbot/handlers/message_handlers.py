@@ -153,21 +153,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 else:
                     return await update.message.reply_text(response, parse_mode="Markdown")
             case "fetch_my_messages":
-                message_history_list = await get_message_history()
-                for message_history in message_history_list:
-                    message_history_data = {
-                        'chat_id': message_history.chat_id,
-                        'chat_name': message_history.chat_name,
-                        'owner_username': message_metadata.username,
-                        'bot_id': bot.bot_id,
-                        'chat_history': json.dumps(message_history.chat_history),
-                        'chat_member_ids': json.dumps(message_history.chat_member_ids),
-                    }
-                    result = await supabase_client.insert_row(table='message_history', dict=message_history_data)
-                    if result is None:
-                        return await update.message.reply_text(
-                            "Could not upload message history for chat " + message_metadata.chat_name,
-                        )
+                message_history_list = await get_message_history(bot, message_metadata)
+                # for message_history in message_history_list:
+                #     message_history_data = {
+                #         'chat_id': message_history.chat_id,
+                #         'chat_name': message_history.chat_name,
+                #         'owner_username': message_metadata.username,
+                #         'bot_id': bot.bot_id,
+                #         'chat_history': json.dumps(message_history.chat_history),
+                #         'chat_member_ids': json.dumps(message_history.chat_member_ids),
+                #     }
+                #     result = await supabase_client.insert_row(table='message_history', dict=message_history_data)
+                    # if result is None:
+                    #     return await update.message.reply_text(
+                    #         "Could not upload message history for chat " + message_metadata.chat_name,
+                    #     )
                 return await update.message.reply_text(
                     "Message history has been successfully uploaded for all the chats you are a member of.\n"
                     "The bot now has access to more knowledge based on your previous chats when users ask questions!\n"
