@@ -1,9 +1,10 @@
 import tiktoken
+
 from supportbot.clients.crawl.dataclasses import GenericChunk
 
 MAX_TOKEN = 30000
-OVERLAP_TOKEN_SIZE = 200 # The overlap size to ensure context is preserved when splitting text.
-MAX_TOKEN_LIMIT = 2000 # The maximum number of tokens for embeddings is 8192, but we use a lower limit to avoid issues with long texts.
+OVERLAP_TOKEN_SIZE = 200  # The overlap size to ensure context is preserved when splitting text.
+MAX_TOKEN_LIMIT = 2000  # The maximum number of tokens for embeddings is 8192, but we use a lower limit to avoid issues with long texts.
 
 def get_identifier_to_num_tokens(identifier_to_text: dict[str, str]) -> dict[str, int]:
     identifier_to_num_tokens = {}
@@ -35,15 +36,15 @@ def merge_identifiers(identifier_to_num_tokens : dict[str, int]) -> list[list[st
     current_size = 0
     for i in range(len(identifier_num_tokens_pairs)):
         if current_size + identifier_num_tokens_pairs[i][1] <= MAX_TOKEN_LIMIT:
-            current_urls.append(identifier_num_tokens_pairs[i][0])
+            current_identifiers.append(identifier_num_tokens_pairs[i][0])
             current_size += identifier_num_tokens_pairs[i][1]
         else:
             if len(current_identifiers) > 0:
-                merged_identifiers.append(current_urls)
-            current_urls = [identifier_num_tokens_pairs[i][0]]
+                merged_identifiers.append(current_identifiers)
+            current_identifiers = [identifier_num_tokens_pairs[i][0]]
             current_size = identifier_num_tokens_pairs[i][1]
-    if len(current_urls) > 0:
-        merged_identifiers.append(current_urls)
+    if len(current_identifiers) > 0:
+        merged_identifiers.append(current_identifiers)
     return merged_identifiers
 
 def merge_split_identifiers(identifier_to_text : dict[str, str], identifier_to_num_tokens : dict[str, int]) -> list[GenericChunk]:

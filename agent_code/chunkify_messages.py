@@ -1,15 +1,18 @@
 import asyncio
 import json
-from supabase import create_client, Client
-from config import SUPABASE_KEY, SUPABASE_URL
+
+from supabase import Client, create_client
+
 from agent_code.chunk_utils import split_text_by_num_tokens
+from config import SUPABASE_KEY, SUPABASE_URL
+
 
 class MessageChunkifier:
     def __init__(self):
         if not SUPABASE_URL or not SUPABASE_KEY:
             raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set")
         self.supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    
+
     async def write_chunks(self):
         response = (
             self.supabase_client.table("message_history")

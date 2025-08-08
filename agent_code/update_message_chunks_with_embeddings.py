@@ -1,5 +1,6 @@
-from agent_utils import get_embedding
 from supabase import create_client
+
+from agent_utils import get_embedding
 from config import SUPABASE_KEY, SUPABASE_URL
 
 CHUNK_DB = "message_history_chunks"
